@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, ExtCtrls,
-  ComCtrls, Grids, StdCtrls,contnrs,math;
+  ComCtrls, Grids, StdCtrls,contnrs,math,process, Types;
 
 const
   D_deelfactortest = 1;
@@ -71,10 +71,10 @@ type
   TmainFRM = class(TForm)
     Button1: TButton;
     Image1: TImage;
-    Image2: TImage;
     ImageList1: TImageList;
     lblverstreken: TLabel;
     lbltijd: TLabel;
+    lblAktie: TLabel;
     Panel1: TPanel;
     Panel2: TPanel;
     Panel3: TPanel;
@@ -84,10 +84,13 @@ type
     tmr: TTimer;
     ToggleBox1: TToggleBox;
     procedure Button1Click(Sender: TObject);
+    procedure Button2Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure Panel3Click(Sender: TObject);
+    procedure pbAktieContextPopup(Sender: TObject; MousePos: TPoint;
+      var Handled: Boolean);
     procedure tmrTimer(Sender: TObject);
     procedure ToggleBox1Change(Sender: TObject);
   private
@@ -123,6 +126,12 @@ var
 implementation
 
 {$R *.lfm}
+procedure BeepMe;
+var s:string;
+begin
+       runcommand('/usr/bin/aplay', ['./beep-02.wav'],s);
+end;
+
 
 
 function FT_GetTokenAt(const cString: string; const cSeperator: Char; const nAt: Integer): string;
@@ -179,13 +188,11 @@ begin
   begin
      tmr.Enabled := false;
      PauzeTijd := Now;
-     Image2.Visible := true;
   end
   else
   begin
      StartSchematijd  :=  StartSchematijd + (now-PauzeTijd);
      StartActieTijd := StartActieTijd + (now-PauzeTijd);
-     Image2.Visible := false;
      tmr.Enabled := true;
   end;
 end;
@@ -246,7 +253,7 @@ procedure TLoopSchemaLijst.InlezenBestand;
 var ls : TLoopSchema;
      Doorgaan: Boolean;
      tekennr,i: Integer;
-     actstr,strweek:string;
+     actstr,strweek,tempstr:string;
      actie: TAktie;
 begin
   Fbestand.LoadFromFile(ChangeFileExt(ParamStr(0), '.csv'));
@@ -256,9 +263,12 @@ begin
     tekennr := 2;
     ls := TLoopSchema.Create;
     strweek :=  FT_GetTokenAt(Fbestand[I],';',0);
-    // strweek := '1';
-   // ls.Weeknr := StrToInt(FT_GetTokenAt(Fbestand[I],';',0));
-     ls.Weeknr := StrToInt(strweek);
+      tempstr :=  strweek[1];
+      if (i = 0) then
+        strweek := (FT_GetTokenAt(Fbestand[I],';',1))
+      else
+        strweek := (FT_GetTokenAt(Fbestand[I],';',0));
+     ls.Weeknr := StrToIntdef(strweek,0);
     ls.dagnr := StrToInt(FT_GetTokenAt(Fbestand[I],';',1));
     ls.Fgedaan := (FT_GetTokenAt(Fbestand[I],';',2) = 'OK');
     ls.StrSchema := Fbestand[I];
@@ -338,6 +348,10 @@ begin
   button1.Enabled :=  false;
 end;
 
+procedure TmainFRM.Button2Click(Sender: TObject);
+begin
+end;
+
 procedure TmainFRM.ToggleBox1Change(Sender: TObject);
 begin
   Pauze := not Pauze;
@@ -352,6 +366,7 @@ end;
 
 procedure TmainFRM.FormCreate(Sender: TObject);
 begin
+//  exit;
   fpauze := false;
   LoopSchemaLijst :=  TLoopSchemaLijst.Create;
   LoopSchemaLijst.OwnsObjects := true;
@@ -381,18 +396,20 @@ begin
 
 end;
 
+procedure TmainFRM.pbAktieContextPopup(Sender: TObject; MousePos: TPoint;
+  var Handled: Boolean);
+begin
+
+end;
+
 procedure TmainFRM.SetPic(const Actiesoort: Tactiesoort);
 var PicNr:integer;
-   //  sizer:  TsizeF;
 begin
   if Actiesoort = asWandelen then
-    PicNr := 0
+    PicNr := 1
   else
-    Picnr := 1;
- { sizer:=  TsizeF.Create(0,0);
-  sizer.Width := 170;
-  sizer.Height := 170; }
- // Image1.Picture := ImageList1.im[1];..piBitmap(sizer, Picnr);
+    Picnr := 0;
+  ImageList1.GetBitmap(PicNr, Image1.Picture.Bitmap)  ;
 end;
 
 procedure TmainFRM.setActie(const Value: TAktie);
@@ -401,29 +418,30 @@ begin
   StartActieTijd := now;
   setPic(FActie.Actiesoort);
   pbAktie.Max := FActie.Seconden;
-
+  lblAktie.Caption:=  IntToStr(Trunc(FActie.Seconden/60)) + ' ('+IntToStr(FActie.Seconden)+')' ;
 end;
 
 procedure TmainFRM.SetActieNo(const Value: integer);
 begin
   FActieNo := Value;
-  StringGrid1.Cells[FActieNo+3 ,rij];
+  StringGrid1.SelectedColor:= clBlue;
+  StringGrid1.Row:=rij;
+  StringGrid1.Col:=FActieNo+3;
+  //StringGrid1SelectCell(self,FActieNo+3,rij,cansel);
+  if  (Value> 0 ) then
+  begin
+  if StringGrid1.CanFocus then
+    StringGrid1.SetFocus;
+
+  end;
+
 end;
 
 procedure TmainFRM.ShowinGrit;
  var  I,J :integer;
-     //  stc   : TStringColumn;
 begin
   StringGrid1.RowCount :=  LoopSchemaLijst.Count ;
-  {for I := 0 to LoopSchemaLijst.kolCount do
-  begin
-    stc := TStringColumn.Create(StringGrid1);
-    if i = 0 then
-      Stc.Width := 55
-    else
-       Stc.Width := 40;
-    StringGrid1.AddObject(stc);
-  end;}
+
   for i := 0 to LoopSchemaLijst.Count -1 do
   begin
     for J := 0 to Tloopschema( LoopSchemaLijst[i]).Kolomen.Count-1 do
@@ -436,18 +454,22 @@ var
   VerstrekenSec : integer;
    ActieSec: integer;
 begin
+  VerstrekenSec := 0;
+  ActieSec := 0;
   VerstrekenSec :=  DubbleToSeconds(now - StartSchematijd) *  D_deelfactortest;
   pbAll.Position :=  VerstrekenSec;
   lblverstreken.caption:= inttostr(round(VerstrekenSec/60));
   ActieSec := DubbleToSeconds (now - StartActieTijd) *  D_deelfactortest;
- { if   ActieSec + 0.5 >  (Actie.Seconden)  then
+  if   ActieSec + 0.5 >  (Actie.Seconden)  then
   begin
-     beep(600,400);
+     BeepMe;
 
-  end;}
-  if   ActieSec >  (Actie.Seconden)  then
+  end;
+
+  if  ( ActieSec >  (Actie.Seconden))  then
   begin
-    {windows.beep(800,1000);   }
+     BeepMe;
+      BeepMe;
     ActieNo := ActieNo + 1;
     if actieno < HuidigSchema.Aktielijst.Count then
       Actie := Taktie (HuidigSchema.Aktielijst[ActieNo])
@@ -467,8 +489,22 @@ end;
 { TAktie }
 
 function TAktie.GetSeconden: integer;
+var tussenvar: integer;
 begin
-  result := Round((minuten * 60));
+
+
+  Result := 0;
+
+  tussenvar:= 0;
+  try
+    tussenvar := (minuten * 60);
+    result :=  tussenvar;
+  Except
+    on E: Exception do
+      ShowMessage(e.message);
+  end;
+
+
 end;
 
 end.

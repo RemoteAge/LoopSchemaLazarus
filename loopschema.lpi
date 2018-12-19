@@ -11,9 +11,6 @@
       <UseXPManifest Value="True"/>
       <Icon Value="0"/>
     </General>
-    <VersionInfo>
-      <StringTable ProductVersion=""/>
-    </VersionInfo>
     <BuildModes Count="1">
       <Item1 Name="Default" Default="True"/>
     </BuildModes>
@@ -39,6 +36,7 @@
         <Filename Value="mainu.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="mainFRM"/>
+        <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="MainU"/>
       </Unit1>
@@ -63,7 +61,7 @@
     </Linking>
   </CompilerOptions>
   <Debugging>
-    <Exceptions Count="3">
+    <Exceptions Count="6">
       <Item1>
         <Name Value="EAbort"/>
       </Item1>
@@ -73,6 +71,15 @@
       <Item3>
         <Name Value="EFOpenError"/>
       </Item3>
+      <Item4>
+        <Name Value="RunError(216)"/>
+      </Item4>
+      <Item5>
+        <Name Value="EAccessViolation"/>
+      </Item5>
+      <Item6>
+        <Name Value="EInvalidOperation"/>
+      </Item6>
     </Exceptions>
   </Debugging>
 </CONFIG>
